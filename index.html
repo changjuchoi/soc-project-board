@@ -75,6 +75,7 @@
   .chip.now { border-color: var(--now); color: var(--now); font-weight: 600; background: var(--now-bg); }
   .cur b { display: block; font-weight: 600; }
   .cur .d { font-size: 12px; color: var(--muted); }
+  .win { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--done); background: color-mix(in srgb, var(--done) 10%, transparent); border-radius: 4px; padding: 1px 6px; }
   .autotag { display: inline-block; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-right: 4px; font-weight: 400; }
   .newtag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--panel); background: var(--now); border-radius: 4px; padding: 0 5px; margin-right: 4px; }
   .chg { font-size: 12px; min-width: 200px; max-width: 300px; }
@@ -168,7 +169,7 @@
   <section id="main" role="tabpanel" aria-labelledby="tab-tk">
     <div class="bar">
       <select id="fstep" aria-label="현재 단계"><option value="">모든 단계</option></select>
-      <input type="search" id="fq" placeholder="사업명·발주처·주관사 검색" aria-label="사업명·발주처·주관사 검색">
+      <input type="search" id="fq" placeholder="사업명·발주처·선정업체 검색" aria-label="사업명·발주처·선정업체 검색">
       <label class="chk"><input type="checkbox" id="factive"> 진행 단계가 있는 사업만</label>
       <select id="fsrc" aria-label="출처">
         <option value="">모든 출처</option>
@@ -300,6 +301,7 @@
         const right = el('span');
         right.append(el('b', null, s.name));
         if (s.date) right.append(' ' + s.date);
+        if (s.winner) right.append(el('span', 'win', s.winner));
         if (s.note) right.append(el('span', 'ev', s.note));
         if (s.evidence) {
           const ev = el('span', 'ev', (s.evidence.text || '') + (s.evidence.checked ? ' (' + fmt(s.evidence.checked) + ' 확인)' : ''));
@@ -319,6 +321,7 @@
     det.append(box);
     td.append(det);
     if (r.agency) td.append(el('span', 'ag', r.agency));
+    if (r.winner) td.append(el('span', 'win', (r.track === '민간투자사업' ? '우선협상: ' : '선정: ') + r.winner));
     return td;
   }
 
@@ -330,7 +333,7 @@
       if (S.active) rows = rows.filter((r) => curStep(r));
     }
     if (S.src) rows = rows.filter((r) => (r.source || '팀 엑셀') === S.src);
-    if (q) rows = rows.filter((r) => [r.name, r.agency, r.lead, r.designer, r.method, r.sector].join(' ').toLowerCase().includes(q));
+    if (q) rows = rows.filter((r) => [r.name, r.agency, r.lead, r.designer, r.method, r.sector, r.winner].join(' ').toLowerCase().includes(q));
     if (S.sort === 'recent') rows = rows.slice().sort((a, b) => String((lastChange(b) || {}).date || '').localeCompare(String((lastChange(a) || {}).date || '')));
     if (S.sort === 'cost') rows = rows.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0));
     $('count').textContent = nf(rows.length) + '개 사업';
@@ -430,6 +433,7 @@
         li.append(el('span', 'src ' + e.type, e.type === 'gov' ? '기관' : '기사'));
         const body = el('div');
         const pj = el('div', 'pj', e.r.name || '—');
+        if (e.r.winner && /적격자|우선협상/.test(e.h.step || '')) pj.append(el('span', 'win', e.r.winner));
         pj.append(el('span', 'trk', (e.r.track === '중단' ? '중단' : e.r.track) + (e.r.agency ? ' · ' + e.r.agency : '')));
         body.append(pj);
         if (e.h.step) {
