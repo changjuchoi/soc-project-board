@@ -123,6 +123,31 @@
   .entry .lk { font-size: 12px; margin-top: 4px; }
   .entry .lk a { color: var(--done); }
   #logview { display: flex; flex-direction: column; gap: 12px; }
+  .title .ag, .title .sum { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .views { display: flex; flex-wrap: wrap; gap: 6px; }
+  .views button { font: inherit; font-size: 14px; font-weight: 500; background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  .views button:hover { color: var(--ink); border-color: var(--done); }
+  .views button[aria-current="page"] { background: var(--done); border-color: var(--done); color: var(--done-ink); }
+  .pane { display: flex; flex-direction: column; gap: 12px; }
+  .ph { margin: 0; font-size: 18px; font-weight: 600; }
+  .ugrp { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+  .ugrp > summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .ugrp > summary .n { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .ugrp table { margin-top: 8px; }
+  .ugrp.warn { border-left: 3px solid var(--now); }
+  .dday { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dday.soon { color: var(--now); }
+  .dday.past { color: var(--muted); }
+  .trk { font-size: 11px; color: var(--muted); }
+  .rtag { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .rtag.sole { background: var(--now-bg); color: var(--now); }
+  .rtag.fail { border: 1px solid var(--now); color: var(--now); }
+  .rtag.re { border: 1px solid var(--line); color: var(--muted); }
+  .plist { margin: 0; padding-left: 1.1em; font-size: 12px; }
+  #map { height: 600px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .mpop { font-family: var(--font); font-size: 13px; line-height: 1.5; min-width: 200px; }
+  .mpop b { display: block; font-size: 14px; }
+  .mpop .m { color: #5c6a7b; font-size: 12px; }
   .fb { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
   .fb h2 { margin: 0; font-size: 16px; font-weight: 600; }
   .fb p { margin: 0; max-width: 75ch; }
@@ -137,11 +162,17 @@
       <p class="lede" id="lede">불러오는 중…</p>
       <p class="meta" id="meta"></p>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="btn primary" id="openlog">날짜별 업데이트 기록 보기</button>
-      <a class="btn" href="#feedback" id="gofb" style="text-decoration:none">의견 보내기</a>
-    </div>
+    <a class="btn" href="#feedback" id="gofb" style="text-decoration:none">의견 보내기</a>
   </header>
+
+  <nav class="views" aria-label="화면 선택">
+    <button type="button" data-v="board" aria-current="page">현황판</button>
+    <button type="button" data-v="upcoming">다가오는 일정</button>
+    <button type="button" data-v="winners">업체별 수주</button>
+    <button type="button" data-v="rebid">유찰·수의계약</button>
+    <button type="button" data-v="map">지도</button>
+    <button type="button" data-v="log">업데이트 기록</button>
+  </nav>
 
   <section id="logview" hidden aria-labelledby="log-h">
     <div class="hdr">
@@ -149,7 +180,6 @@
         <h2 id="log-h" style="margin:0;font-size:18px;font-weight:600">날짜별 업데이트 기록</h2>
         <p class="meta">자동 검색이 어떤 기사·기관 공고를 근거로 어떤 단계를 바꿨는지 날짜별로 보여줍니다.</p>
       </div>
-      <button type="button" class="btn" id="closelog">현황판으로 돌아가기</button>
     </div>
     <div class="logbar">
       <select id="lsrc" aria-label="출처 종류">
@@ -162,6 +192,59 @@
     <div class="logbar" id="ldates" role="group" aria-label="날짜 선택"></div>
     <div id="ldays"></div>
     <p class="empty" id="lempty" hidden>이 조건에 맞는 기록이 없습니다.</p>
+  </section>
+
+  <section id="upcomingview" class="pane" hidden aria-labelledby="up-h">
+    <div>
+      <h2 id="up-h" class="ph">다가오는 일정</h2>
+      <p class="meta">아직 완료되지 않은 단계의 예정일을 날짜순으로 모았습니다. 날짜가 지났는데 완료로 바뀌지 않은 단계는 '결과 확인 필요'에 모았습니다.</p>
+    </div>
+    <div class="logbar">
+      <select id="utrack" aria-label="구분"><option value="">기술형·민자 전체</option><option>기술형입찰</option><option>민간투자사업</option></select>
+      <input type="search" id="uq" placeholder="사업명·발주처 검색" aria-label="사업명·발주처 검색">
+    </div>
+    <div id="ugroups"></div>
+  </section>
+
+  <section id="winnersview" class="pane" hidden aria-labelledby="w-h">
+    <div>
+      <h2 id="w-h" class="ph">업체별 수주 현황</h2>
+      <p class="meta" id="wmeta"></p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>순위</th><th>업체(대표사)</th><th>건수</th><th>사업비 합계(억원)</th><th>사업</th></tr></thead>
+        <tbody id="wrows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="rebidview" class="pane" hidden aria-labelledby="r-h">
+    <div>
+      <h2 id="r-h" class="ph">유찰·수의계약 전환 사업</h2>
+      <p class="meta" id="rmeta"></p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>구분</th><th>사업명 · 발주처</th><th>현재 단계</th><th>관련 내용</th></tr></thead>
+        <tbody id="rrows"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="rempty" hidden>지금은 유찰·수의계약 관련 기록이 있는 사업이 없습니다.</p>
+  </section>
+
+  <section id="mapview" class="pane" hidden aria-labelledby="m-h">
+    <div>
+      <h2 id="m-h" class="ph">지도로 보기</h2>
+      <p class="meta" id="mmeta">위치는 사업명·발주처의 지명으로 정한 시·군 단위 대략 위치입니다. 같은 지역 사업은 묶음 숫자를 누르면 펼쳐집니다.</p>
+    </div>
+    <div class="logbar" id="mfilters">
+      <label class="chk"><input type="checkbox" value="기술형입찰" checked> 기술형입찰</label>
+      <label class="chk"><input type="checkbox" value="민간투자사업" checked> 민간투자사업</label>
+      <label class="chk"><input type="checkbox" value="중단"> 중단</label>
+      <label class="chk"><input type="checkbox" id="mactive"> 진행 단계가 있는 사업만</label>
+    </div>
+    <div id="map" role="region" aria-label="사업 위치 지도"></div>
   </section>
 
   <div id="boardview">
@@ -402,7 +485,7 @@
     setTab(b.dataset.t);
     try { history.replaceState(null, '', '#' + hashOf[S.tab]); } catch (e) { /* ignore */ }
   }));
-  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'feedback') return; if (h === 'log') { setLogOpen(true); return; } setLogOpen(false); setTab(tabOf[h]); });
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'feedback') return; if (VIEWS[h] && h !== 'board') { showView(h); return; } showView('board'); setTab(tabOf[h]); });
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
   const srcType = (url) => {
     try { const h = new URL(url).hostname; return /(\.go\.kr|kdi\.re\.kr|\.re\.kr|lh\.or\.kr|ex\.co\.kr|kr\.or\.kr|kwater\.or\.kr|keco\.or\.kr|khnp\.co\.kr|kric\.go\.kr)$/.test(h) || /pimac|eiec/.test(h) ? 'gov' : 'news'; } catch (e) { return 'news'; }
@@ -469,15 +552,215 @@
       return sec;
     }));
   }
-  function setLogOpen(open) {
-    $('logview').hidden = !open;
-    $('boardview').hidden = open;
-    $('openlog').hidden = open;
-    $('feedback').hidden = open;
-    if (open) drawLog();
+  const VIEWS = { board: 'boardview', upcoming: 'upcomingview', winners: 'winnersview', rebid: 'rebidview', map: 'mapview', log: 'logview' };
+  let curView = 'board';
+  function showView(v) {
+    if (!VIEWS[v]) v = 'board';
+    curView = v;
+    Object.entries(VIEWS).forEach(([k, id]) => { $(id).hidden = k !== v; });
+    document.querySelectorAll('.views button').forEach((b) => { if (b.dataset.v === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (v === 'log') drawLog();
+    if (v === 'upcoming') drawUpcoming();
+    if (v === 'winners') drawWinners();
+    if (v === 'rebid') drawRebid();
+    if (v === 'map') drawMap();
   }
-  $('openlog').addEventListener('click', () => { setLogOpen(true); try { history.replaceState(null, '', '#log'); } catch (e) {} window.scrollTo(0, 0); });
-  $('closelog').addEventListener('click', () => { setLogOpen(false); try { history.replaceState(null, '', '#' + hashOf[S.tab]); } catch (e) {} });
+  function setLogOpen(open) { showView(open ? 'log' : 'board'); }
+  document.querySelectorAll('.views button').forEach((b) => b.addEventListener('click', () => {
+    showView(b.dataset.v);
+    try { history.replaceState(null, '', '#' + (b.dataset.v === 'board' ? hashOf[S.tab] : b.dataset.v)); } catch (e) {}
+  }));
+
+  /* ---------- 일정 파싱 ---------- */
+  function lastDay(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  const iso = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  function parseWhen(s) {
+    s = String(s || '');
+    const re = /'?(\d{2})\s*\.\s*(\d{1,2}\s*Q|[上中下]|\d{1,2})?(?:\s*\.\s*(\d{1,2}))?/g;
+    let m;
+    while ((m = re.exec(s))) {
+      const y = 2000 + Number(m[1]);
+      if (y < 2015 || y > 2040) continue;
+      const a = (m[2] || '').replace(/\s/g, '');
+      if (!a) return { start: iso(y, 1, 1), end: iso(y, 12, 31), prec: 'year' };
+      if (/Q$/.test(a)) { const q = Math.min(4, Math.max(1, Number(a.slice(0, -1)))); return { start: iso(y, q * 3 - 2, 1), end: iso(y, q * 3, lastDay(y, q * 3)), prec: 'quarter' }; }
+      if (a === '上' || a === '中') return { start: iso(y, 1, 1), end: iso(y, 6, 30), prec: 'half' };
+      if (a === '下') return { start: iso(y, 7, 1), end: iso(y, 12, 31), prec: 'half' };
+      const mo = Number(a);
+      if (mo < 1 || mo > 12) return { start: iso(y, 1, 1), end: iso(y, 12, 31), prec: 'year' };
+      if (m[3] && Number(m[3]) >= 1 && Number(m[3]) <= 31) { const d = iso(y, mo, Number(m[3])); return { start: d, end: d, prec: 'day' }; }
+      return { start: iso(y, mo, 1), end: iso(y, mo, lastDay(y, mo)), prec: 'month' };
+    }
+    return null;
+  }
+  const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00Z') - new Date(b + 'T00:00:00Z')) / 86400000);
+
+  function drawUpcoming() {
+    const T = today();
+    const tr = $('utrack').value, q = $('uq').value.trim().toLowerCase();
+    const items = [];
+    S.all.forEach((r) => {
+      if (r.track === '중단') return;
+      if (tr && r.track !== tr) return;
+      if (q && ![r.name, r.agency, r.winner].join(' ').toLowerCase().includes(q)) return;
+      (r.steps || []).forEach((s) => {
+        if (s.status === '완료' || !s.date) return;
+        const w = parseWhen(s.date); if (!w) return;
+        items.push({ r, s, w });
+      });
+    });
+    const G = [
+      { k: 'past', t: '결과 확인 필요 (예정일이 지났는데 완료 확인 안 됨)', open: false, warn: true, list: [] },
+      { k: 'week', t: '7일 이내', open: true, list: [] },
+      { k: 'month', t: '한 달 이내', open: true, list: [] },
+      { k: 'thism', t: '이번 달 중 (날짜 미정)', open: true, list: [] },
+      { k: 'q3', t: '3개월 이내', open: true, list: [] },
+      { k: 'later', t: '3개월 이후 (월 단위 예정)', open: false, list: [] },
+      { k: 'rough', t: '분기·반기·연 단위 예정 (대략)', open: false, list: [] },
+    ];
+    const by = Object.fromEntries(G.map((g) => [g.k, g]));
+    items.forEach((it) => {
+      const { w } = it;
+      if (w.end < T) { by.past.list.push(it); return; }
+      if (w.prec === 'day') { const dd = dayDiff(w.start, T); it.dd = dd; (dd <= 7 ? by.week : dd <= 31 ? by.month : dd <= 92 ? by.q3 : by.later).list.push(it); return; }
+      if (w.prec === 'month') { if (w.start <= T) by.thism.list.push(it); else { const dd = dayDiff(w.start, T); (dd <= 92 ? by.q3 : by.later).list.push(it); } return; }
+      by.rough.list.push(it);
+    });
+    G.forEach((g) => g.list.sort((a, b) => (g.k === 'past' ? b.w.end.localeCompare(a.w.end) : a.w.start.localeCompare(b.w.start))));
+    $('ugroups').replaceChildren(...G.filter((g) => g.list.length).map((g) => {
+      const d = el('details', 'ugrp' + (g.warn ? ' warn' : ''));
+      d.open = g.open;
+      const sm = el('summary', null, g.t); sm.append(el('span', 'n', nf(g.list.length) + '건')); d.append(sm);
+      const tw = el('div', 'tw'); const tb = el('table');
+      const th = el('tr'); ['예정일', 'D-day', '사업명', '단계', '구분', '발주처'].forEach((x) => th.append(el('th', null, x)));
+      const thead = el('thead'); thead.append(th); tb.append(thead);
+      const body = el('tbody');
+      g.list.forEach(({ r, s, w, dd }) => {
+        const row = el('tr');
+        let dtxt = '—', cls = 'dday';
+        if (w.prec === 'day') { const x = dd != null ? dd : dayDiff(w.start, T); dtxt = x === 0 ? 'D-day' : x > 0 ? 'D-' + x : 'D+' + (-x); cls += x < 0 ? ' past' : x <= 7 ? ' soon' : ''; }
+        else if (g.k === 'past') { dtxt = '지남'; cls += ' past'; }
+        const nm = el('td', 'title'); nm.append(el('b', null, r.name));
+        if (r.winner) nm.append(el('span', 'win', '선정: ' + r.winner));
+        if (s.note) nm.append(el('span', 'sum', s.note));
+        row.append(el('td', 'small nw', s.date), el('td', cls, dtxt), nm, el('td', 'small nw', s.name + ' · ' + s.status), el('td', 'small nw', r.track), el('td', 'small', r.agency || '—'));
+        body.append(row);
+      });
+      tb.append(body); tw.append(tb); d.append(tw);
+      return d;
+    }));
+    if (!items.length) $('ugroups').replaceChildren(el('p', 'empty', '조건에 맞는 예정 일정이 없습니다.'));
+  }
+  $('utrack').addEventListener('change', drawUpcoming);
+  $('uq').addEventListener('input', drawUpcoming);
+
+  /* ---------- 업체별 수주 ---------- */
+  const normCo = (w) => String(w || '').replace(/\s*컨소시엄\s*$/, '').replace(/\(.*?\)/g, '').trim();
+  function drawWinners() {
+    const m = new Map();
+    S.all.forEach((r) => { if (!r.winner) return; const k = normCo(r.winner); if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+    const rows = [...m.entries()].map(([k, list]) => ({ k, list, n: list.length, sum: list.reduce((a, r) => a + (typeof r.cost === 'number' ? r.cost : 0), 0) }))
+      .sort((a, b) => b.n - a.n || b.sum - a.sum);
+    const known = S.all.filter((r) => r.winner).length;
+    const missing = S.all.filter((r) => !r.winner && r.track === '기술형입찰' && (r.steps || []).some((s) => s.name === '실시설계적격자 선정' && s.status === '완료')).length;
+    $('wmeta').textContent = '선정 업체가 확인된 사업 ' + nf(known) + '개를 대표사 기준으로 집계했습니다. 기술형입찰 중 실시설계적격자 선정은 끝났지만 업체를 아직 확인하지 못한 사업이 ' + nf(missing) + '개 있으며, 자동 검색이 찾는 대로 추가됩니다.';
+    let rank = 0, prev = null;
+    $('wrows').replaceChildren(...rows.map((x, i) => {
+      if (!prev || prev.n !== x.n || prev.sum !== x.sum) rank = i + 1; prev = x;
+      const tr = el('tr');
+      const pl = el('td'); const ul = el('ul', 'plist');
+      x.list.forEach((r) => { const li = el('li', null, r.name); li.append(el('span', 'trk', ' · ' + r.track + (r.agency ? ' · ' + r.agency : ''))); ul.append(li); });
+      pl.append(ul);
+      tr.append(el('td', 'num', rank), el('td', null, x.k), el('td', 'num', nf(x.n)), el('td', 'num', x.sum ? x.sum.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) : '—'), pl);
+      return tr;
+    }));
+  }
+
+  /* ---------- 유찰·수의계약 ---------- */
+  const REB = /유찰|수의계약|재공고|무응찰|단독\s*(응찰|제출|참여|입찰)/;
+  function drawRebid() {
+    const out = [];
+    S.all.forEach((r) => {
+      const hits = [];
+      (r.history || []).forEach((h) => { if (REB.test(h.text || '')) hits.push({ date: h.date, text: h.text, url: h.url, source: h.source }); });
+      if (!hits.length) (r.steps || []).forEach((s) => {
+        if (REB.test(s.note || '')) hits.push({ date: (s.evidence && s.evidence.checked) || '', text: s.name + ': ' + s.note, url: s.evidence && s.evidence.url, source: s.evidence && s.evidence.source });
+        else if (s.evidence && REB.test(s.evidence.text || '') && !(r.history || []).some((h) => h.text === s.evidence.text)) hits.push({ date: s.evidence.checked || '', text: s.evidence.text, url: s.evidence.url, source: s.evidence.source });
+      });
+      if (!hits.length) return;
+      hits.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      const all = hits.map((h) => h.text).join(' ');
+      const tag = /수의계약/.test(all) ? ['수의계약 전환·검토', 'sole'] : /유찰|무응찰|단독/.test(all) ? ['유찰', 'fail'] : ['재공고', 're'];
+      out.push({ r, hits, tag });
+    });
+    const order = { sole: 0, fail: 1, re: 2 };
+    out.sort((a, b) => order[a.tag[1]] - order[b.tag[1]] || String(b.hits[0].date || '').localeCompare(String(a.hits[0].date || '')));
+    $('rmeta').textContent = '유찰, 단독 응찰, 재공고, 수의계약 전환 기록이 있는 사업 ' + nf(out.length) + '개입니다. 단독 응찰이나 수의계약으로 넘어가는 사업은 참여 기회를 다시 검토해 볼 수 있습니다.';
+    $('rempty').hidden = out.length !== 0;
+    $('rrows').replaceChildren(...out.map(({ r, hits, tag }) => {
+      const tr = el('tr');
+      const tg = el('td'); tg.append(el('span', 'rtag ' + tag[1], tag[0]));
+      const nm = el('td', 'title'); nm.append(el('b', null, r.name)); if (r.agency) nm.append(el('span', 'ag', r.agency));
+      const c = curStep(r);
+      const info = el('td', 'chg');
+      hits.slice(0, 3).forEach((h, i) => {
+        const line = el('div'); if (i) line.style.marginTop = '4px';
+        if (h.date) line.append(el('span', 'mut', fmt(h.date) + ' '));
+        line.append(h.text || ''); const a = link(h.url, h.source || '근거'); if (a) line.append(a);
+        info.append(line);
+      });
+      tr.append(tg, nm, el('td', 'small', c ? c.name + (c.date ? ' · ' + c.date : '') : curLabel(r) || '—'), info);
+      return tr;
+    }));
+  }
+
+  /* ---------- 지도 ---------- */
+  let MAP = null, CL = null;
+  function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); }); }
+  function loadCss(href) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.append(l); }
+  let mapLoading = null;
+  function ensureLeaflet() {
+    if (window.L && window.L.markerClusterGroup) return Promise.resolve();
+    if (mapLoading) return mapLoading;
+    loadCss('vendor/leaflet/leaflet.css');
+    loadCss('vendor/leaflet/MarkerCluster.css');
+    loadCss('vendor/leaflet/MarkerCluster.Default.css');
+    mapLoading = loadScript('vendor/leaflet/leaflet.js').then(() => loadScript('vendor/leaflet/leaflet.markercluster.js'));
+    return mapLoading;
+  }
+  function drawMap() {
+    ensureLeaflet().then(() => {
+      if (!MAP) {
+        MAP = L.map('map', { scrollWheelZoom: true }).setView([36.3, 127.8], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(MAP);
+      }
+      setTimeout(() => MAP.invalidateSize(), 50);
+      if (CL) MAP.removeLayer(CL);
+      CL = L.markerClusterGroup({ maxClusterRadius: 40, spiderfyOnMaxZoom: true, showCoverageOnHover: false });
+      const on = [...document.querySelectorAll('#mfilters input[type=checkbox][value]')].filter((x) => x.checked).map((x) => x.value);
+      const act = $('mactive').checked;
+      let shown = 0, noloc = 0;
+      S.all.forEach((r) => {
+        if (!on.includes(r.track)) return;
+        if (act && !curStep(r)) return;
+        if (!r.loc) { noloc++; return; }
+        const color = r.track === '기술형입찰' ? '#1f5aa6' : r.track === '민간투자사업' ? '#0f7a6b' : '#8a96a5';
+        const mk = L.circleMarker([r.loc.lat + (Math.random() - 0.5) * 0.004, r.loc.lng + (Math.random() - 0.5) * 0.004], { radius: 8, color: '#ffffff', weight: 2, fillColor: color, fillOpacity: 0.95 });
+        const box = el('div', 'mpop');
+        box.append(el('b', null, r.name));
+        box.append(el('div', 'm', r.track + (r.agency ? ' · ' + r.agency : '') + ' · ' + r.loc.label + ' 일대'));
+        const c = curStep(r);
+        box.append(el('div', null, '현재 단계: ' + (c ? c.name + (c.date ? ' (' + c.date + ')' : '') : (curLabel(r) || (r.track === '중단' ? '중단' : '—')))));
+        if (r.winner) box.append(el('div', null, '선정: ' + r.winner));
+        if (typeof r.cost === 'number') box.append(el('div', 'm', '사업비 ' + r.cost.toLocaleString('ko-KR', { maximumFractionDigits: 1 }) + '억원'));
+        mk.bindPopup(box);
+        CL.addLayer(mk); shown++;
+      });
+      MAP.addLayer(CL);
+      $('mmeta').textContent = '지도에 ' + nf(shown) + '개 사업 표시 중' + (noloc ? ' (위치를 정하지 못한 ' + nf(noloc) + '개 제외)' : '') + '. 위치는 사업명·발주처의 지명으로 정한 시·군 단위 대략 위치이며, 묶음 숫자를 누르면 펼쳐집니다.';
+    }).catch(() => { $('mmeta').textContent = '지도를 불러오지 못했습니다. 새로고침해 보세요.'; });
+  }
+  document.querySelectorAll('#mfilters input').forEach((x) => x.addEventListener('change', () => { if (curView === 'map') drawMap(); }));
   $('ldates').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.ldate = b.dataset.v; drawLog(); });
   $('lsrc').addEventListener('change', (e) => { S.lsrc = e.target.value; drawLog(); });
   $('lq').addEventListener('input', (e) => { S.lq = e.target.value; drawLog(); });
@@ -488,10 +771,10 @@
   $('fsort').addEventListener('change', (e) => { S.sort = e.target.value; draw(); });
   $('fsrc').addEventListener('change', (e) => { S.src = e.target.value; draw(); });
 
-  fetch('data/log.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).catch(() => []).then((l) => { S.log = Array.isArray(l) ? l : []; if (!$('logview').hidden) drawLog(); });
+  fetch('data/log.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).catch(() => []).then((l) => { S.log = Array.isArray(l) ? l : []; if (curView === 'log') drawLog(); });
   fetch('data/projects.json', { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-    .then((d) => { S.all = Array.isArray(d) ? d : []; header(); setTab(tabOf[location.hash.slice(1)]); if (location.hash === '#log') setLogOpen(true); })
+    .then((d) => { S.all = Array.isArray(d) ? d : []; header(); setTab(tabOf[location.hash.slice(1)]); const h0 = location.hash.slice(1); if (VIEWS[h0] && h0 !== 'board') showView(h0); })
     .catch(() => { $('lede').textContent = '목록을 불러오지 못했습니다. 새로고침해 보세요.'; });
 })();
 </script>
