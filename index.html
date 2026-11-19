@@ -249,10 +249,6 @@
 
   <div id="boardview">
 
-  <section class="recent" aria-labelledby="recent-h">
-    <h2 id="recent-h">최근 7일 바뀐 단계</h2>
-    <ul id="recent"><li class="none">불러오는 중…</li></ul>
-  </section>
 
   <nav class="tabs" role="tablist" aria-label="사업 구분">
     <button class="tab" role="tab" id="tab-tk" data-t="기술형입찰" aria-selected="true">기술형입찰<span class="c" id="c-tk"></span></button>
@@ -350,18 +346,9 @@
     S.all.forEach((r) => (r.history || []).forEach((h) => { if (String(h.date || '') >= since) changes.push({ r, h }); }));
     changes.sort((a, b) => String(b.h.date).localeCompare(String(a.h.date)));
     const active = S.all.filter((r) => r.track !== '중단' && curStep(r)).length;
-    $('lede').textContent = '사업 ' + nf(S.all.length) + '개 중 ' + nf(active) + '개가 진행 단계에 있고, 최근 7일 동안 ' + nf(changes.length) + '건의 단계 변화가 확인됐습니다.';
+    $('lede').textContent = '사업 ' + nf(S.all.length) + '개 중 ' + nf(active) + '개가 진행 단계에 있고, 최근 7일 동안 ' + nf(changes.length) + '건의 단계 변화가 확인됐습니다(자세한 내용은 업데이트 기록).';
     const last = S.all.flatMap((r) => (r.history || []).map((h) => h.date || '')).sort().pop();
     $('meta').textContent = '마지막 확인 ' + fmt(last) + ' · 평일 하루 3회(08:50·11:50·16:50) 자동 검색 · 누구나 볼 수 있는 공개 페이지입니다';
-    const ul = $('recent');
-    if (!changes.length) { ul.replaceChildren(el('li', 'none', '최근 7일 동안 바뀐 단계가 없습니다.')); return; }
-    ul.replaceChildren(...changes.slice(0, 10).map(({ r, h }) => {
-      const li = el('li');
-      li.append(el('span', 'mut small', fmt(h.date)), el('b', null, r.name), el('span', null, '· ' + (h.step || '') + ' ' + (h.status || '')), el('span', 'mut small', h.text || ''));
-      const a = link(h.url, h.source || '원문'); if (a) li.append(a);
-      return li;
-    }));
-    if (changes.length > 10) ul.append(el('li', 'none', '외 ' + nf(changes.length - 10) + '건은 목록의 최근 변경 열에서 볼 수 있습니다.'));
   }
 
   function stepOptions() {
