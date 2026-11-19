@@ -1,5 +1,6 @@
 """나라장터(조달청) 공사 입찰공고 중 기술형입찰(턴키·대안·기술제안 등)만 받아 data/g2b.json 으로 저장.
-인증키는 환경변수 G2B_API_KEY(GitHub 비밀값)에서만 읽고, 어디에도 출력하지 않는다."""
+인증키는 환경변수 G2B_API_KEY(GitHub 비밀값)에서만 읽고, 어디에도 출력하지 않는다.
+재시험 시각: 2026-11-19 18:07 KST"""
 import json, os, re, sys, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timedelta, timezone
 
