@@ -1,0 +1,33 @@
+name: 나라장터 기술형 입찰공고 수집
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 22 * * 0-4"   # 한국시간 평일 07:40
+  push:
+    branches: [main]
+    paths: [".github/workflows/g2b.yml", "scripts/g2b_fetch.py"]
+permissions:
+  contents: write
+concurrency:
+  group: g2b
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 공고 받기
+        env:
+          G2B_API_KEY: ${{ secrets.G2B_API_KEY }}
+        run: python scripts/g2b_fetch.py
+      - name: 결과 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/g2b.json
+          git diff --cached --quiet && exit 0
+          git commit -m "나라장터 기술형 입찰공고 수집 $(TZ=Asia/Seoul date +%Y-%m-%d\ %H:%M)"
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
