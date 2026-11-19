@@ -124,6 +124,7 @@
   .entry .lk a { color: var(--done); }
   #logview { display: flex; flex-direction: column; gap: 12px; }
   .title .ag, .title .sum { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .rf { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
   .views { display: flex; flex-wrap: wrap; gap: 6px; }
   .views button { font: inherit; font-size: 14px; font-weight: 500; background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
   .views button:hover { color: var(--ink); border-color: var(--done); }
@@ -178,7 +179,7 @@
     <div class="hdr">
       <div>
         <h2 id="log-h" style="margin:0;font-size:18px;font-weight:600">날짜별 업데이트 기록</h2>
-        <p class="meta">자동 검색이 어떤 기사·기관 공고를 근거로 어떤 단계를 바꿨는지 날짜별로 보여줍니다.</p>
+        <p class="meta">기사·기관 공고가 실제로 나온 날짜별로 정리했습니다. 나중에 찾아서 반영한 소식은 옆에 반영일을 작게 표시합니다.</p>
       </div>
     </div>
     <div class="logbar">
@@ -323,7 +324,10 @@
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const link = (url, label) => { if (!/^https?:\/\//.test(String(url || ''))) return null; const a = el('a', null, label); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; return a; };
   const nf = (x) => Number(x).toLocaleString('ko-KR');
-  const lastChange = (r) => (r.history || []).slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))[0];
+  const evd = (h) => String(h.eventDate || h.date || '');
+  const fmtEv = (s) => { s = String(s || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(/-/g, '.'); if (/^\d{4}-\d{2}$/.test(s)) return s.slice(0, 4) + '.' + s.slice(5); return s || '—'; };
+  const rfTag = (h) => (h.date && evd(h) !== h.date ? el('span', 'rf', fmt(h.date).slice(5) + ' 반영') : null);
+  const lastChange = (r) => (r.history || []).slice().sort((a, b) => evd(b).localeCompare(evd(a)) || String(b.date || '').localeCompare(String(a.date || '')))[0];
   const curStep = (r) => (r.steps || []).find((s) => s.status === '진행');
   const curLabel = (r) => {
     const st = r.steps || [];
@@ -333,7 +337,7 @@
     return '착수 전';
   };
   const isNew = (r) => r.addedOn && r.addedOn >= addDays(today(), -6);
-  const fresh = (r) => { const h = lastChange(r); return h && String(h.date || '') >= addDays(today(), -2); };
+  const fresh = (r) => { const h = lastChange(r); return h && evd(h).length === 10 && evd(h) >= addDays(today(), -2); };
 
   function header() {
     const counts = { '기술형입찰': 0, '민간투자사업': 0, '중단': 0 };
@@ -343,8 +347,7 @@
     $('c-stop').textContent = nf(counts['중단']);
     const since = addDays(today(), -6);
     const changes = [];
-    S.all.forEach((r) => (r.history || []).forEach((h) => { if (String(h.date || '') >= since) changes.push({ r, h }); }));
-    changes.sort((a, b) => String(b.h.date).localeCompare(String(a.h.date)));
+    S.all.forEach((r) => (r.history || []).forEach((h) => { if (evd(h).length === 10 && evd(h) >= since) changes.push({ r, h }); }));
     const active = S.all.filter((r) => r.track !== '중단' && curStep(r)).length;
     $('lede').textContent = '사업 ' + nf(S.all.length) + '개 중 ' + nf(active) + '개가 진행 단계에 있고, 최근 7일 동안 ' + nf(changes.length) + '건의 단계 변화가 확인됐습니다(자세한 내용은 업데이트 기록).';
     const last = S.all.flatMap((r) => (r.history || []).map((h) => h.date || '')).sort().pop();
@@ -422,7 +425,7 @@
     }
     if (S.src) rows = rows.filter((r) => (r.source || '팀 엑셀') === S.src);
     if (q) rows = rows.filter((r) => [r.name, r.agency, r.lead, r.designer, r.method, r.sector, r.winner].join(' ').toLowerCase().includes(q));
-    if (S.sort === 'recent') rows = rows.slice().sort((a, b) => String((lastChange(b) || {}).date || '').localeCompare(String((lastChange(a) || {}).date || '')));
+    if (S.sort === 'recent') rows = rows.slice().sort((a, b) => evd(lastChange(b) || {}).localeCompare(evd(lastChange(a) || {})));
     if (S.sort === 'cost') rows = rows.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0));
     $('count').textContent = nf(rows.length) + '개 사업';
     $('empty').hidden = rows.length !== 0;
@@ -451,7 +454,8 @@
       const chg = el('td', 'chg');
       const h = lastChange(r);
       if (h) {
-        chg.append(el('span', 'mut', fmt(h.date) + ' '));
+        chg.append(el('span', 'mut', fmtEv(evd(h)) + ' '));
+        const rt = rfTag(h); if (rt) { chg.append(rt); chg.append(' '); }
         chg.append((h.step ? h.step + ' ' + (h.status || '') + ' · ' : '') + (h.text || ''));
         const a = link(h.url, '근거'); if (a) chg.append(a);
       } else chg.append(el('span', 'mut', '—'));
@@ -479,7 +483,7 @@
   };
   function logEntries() {
     const out = [];
-    S.all.forEach((r) => (r.history || []).forEach((h) => out.push({ date: String(h.date || ''), r, h, type: srcType(h.url) })));
+    S.all.forEach((r) => (r.history || []).forEach((h) => out.push({ date: evd(h), r, h, type: srcType(h.url) })));
     return out;
   }
   function drawLog() {
@@ -493,14 +497,20 @@
     const dates = [...new Set([...byDate.keys(), ...(q || S.lsrc ? [] : runsBy.keys())])].filter(Boolean).sort().reverse();
     const box = $('ldates');
     const chip = (v, label, n) => { const b = el('button', 'dchip', label); b.type = 'button'; b.dataset.v = v; if (n != null) b.append(el('span', 'n', n)); b.setAttribute('aria-pressed', String(S.ldate === v)); return b; };
-    box.replaceChildren(chip('', '전체 날짜'), ...dates.map((d) => { const dt = new Date(d + 'T00:00:00Z'); return chip(d, fmt(d).slice(5) + ' (' + DOW[dt.getUTCDay()] + ')', (byDate.get(d) || []).length); }));
-    const show = S.ldate ? dates.filter((d) => d === S.ldate) : dates;
+    const months = [...new Set(dates.map((d) => d.slice(0, 7)))].sort().reverse();
+    const inM = (d, m) => (m.length === 4 ? d === m : d.startsWith(m));
+    const mcount = (m) => dates.filter((d) => inM(d, m)).reduce((a, d) => a + (byDate.get(d) || []).length, 0);
+    box.replaceChildren(chip('', '전체'), ...months.map((m) => chip(m, m.length === 7 ? m.slice(0, 4) + '년 ' + Number(m.slice(5)) + '월' : m + '년', mcount(m))));
+    const show = S.ldate ? dates.filter((d) => inM(d, S.ldate)) : dates;
     $('lempty').hidden = show.length !== 0;
     $('ldays').replaceChildren(...show.map((d) => {
       const sec = el('section', 'day');
-      const dt = new Date(d + 'T00:00:00Z');
       const es = byDate.get(d) || [];
-      sec.append(el('h3', null, fmt(d) + ' (' + DOW[dt.getUTCDay()] + ') · 변경 ' + nf(es.length) + '건'));
+      let head;
+      if (d.length === 10) { const dt = new Date(d + 'T00:00:00Z'); head = fmt(d) + ' (' + DOW[dt.getUTCDay()] + ')'; }
+      else if (d.length === 7) head = d.slice(0, 4) + '년 ' + Number(d.slice(5)) + '월 (일자 미표기)';
+      else head = d + '년 (월·일 미표기)';
+      sec.append(el('h3', null, head + (es.length ? ' · 소식 ' + nf(es.length) + '건' : '')));
       const runs = runsBy.get(d) || [];
       if (runs.length) {
         const ul = el('ul', 'runs');
@@ -508,13 +518,13 @@
           const parts = [String(x.at).slice(11, 16) + ' 자동 검색'];
           if (x.checked != null) parts.push('기존 사업 ' + nf(x.checked) + '개 확인');
           if (x.added != null) parts.push('새 사업 ' + nf(x.added) + '개');
-          if (x.changed != null) parts.push('단계 변경 ' + nf(x.changed) + '건');
+          if (x.changed != null) parts.push(nf(x.changed) + '건 반영(각 소식의 실제 일자에 기록)');
           if (x.note) parts.push(x.note);
           ul.append(el('li', null, parts.join(' · ')));
         });
         sec.append(ul);
       }
-      if (!es.length) { sec.append(el('p', 'mut small', '이날은 바뀐 단계가 없습니다.')); return sec; }
+      if (!es.length) return sec;
       const ul = el('ul', 'entries');
       es.forEach((e) => {
         const li = el('li', 'entry');
@@ -523,6 +533,7 @@
         const pj = el('div', 'pj', e.r.name || '—');
         if (e.r.winner && /적격자|우선협상/.test(e.h.step || '')) pj.append(el('span', 'win', e.r.winner));
         pj.append(el('span', 'trk', (e.r.track === '중단' ? '중단' : e.r.track) + (e.r.agency ? ' · ' + e.r.agency : '')));
+        const rt = rfTag(e.h); if (rt) pj.append(rt);
         body.append(pj);
         if (e.h.step) {
           const c = el('div', 'chg2');
