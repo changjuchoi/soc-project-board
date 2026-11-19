@@ -91,16 +91,68 @@
   .about { font-size: 12px; color: var(--muted); max-width: 85ch; }
   .about summary { cursor: pointer; color: var(--ink); font-size: 13px; }
   .about ul { padding-left: 1.2em; }
+  .hdr { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between; }
+  .btn { font: inherit; font-size: 13px; font-weight: 500; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--done); color: var(--done); }
+  .btn.primary { background: var(--done); border-color: var(--done); color: var(--done-ink); }
+  .logbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .dchip { font: inherit; font-size: 12px; background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .dchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .dchip .n { margin-left: 4px; opacity: .75; }
+  .day { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .day h3 { margin: 0; font-size: 16px; font-weight: 600; }
+  .runs { margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+  .entries { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+  .entry { display: grid; grid-template-columns: 56px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .entry:first-child { border-top: 0; }
+  .src { font-size: 11px; font-weight: 600; border-radius: 4px; padding: 2px 0; text-align: center; height: fit-content; }
+  .src.gov { background: var(--done); color: var(--done-ink); }
+  .src.news { border: 1px solid var(--line); color: var(--muted); }
+  .entry .pj { font-weight: 600; }
+  .entry .trk { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 400; }
+  .entry .chg2 { font-size: 13px; margin-top: 2px; }
+  .entry .chg2 b { color: var(--now); font-weight: 600; }
+  .entry .chg2 b.done { color: var(--done); }
+  .entry .txt { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .entry .lk { font-size: 12px; margin-top: 4px; }
+  .entry .lk a { color: var(--done); }
+  #logview { display: flex; flex-direction: column; gap: 12px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>기술형·민자사업 현황판</h1>
-    <p class="lede" id="lede">불러오는 중…</p>
-    <p class="meta" id="meta"></p>
+  <header class="hdr">
+    <div>
+      <h1>기술형·민자사업 현황판</h1>
+      <p class="lede" id="lede">불러오는 중…</p>
+      <p class="meta" id="meta"></p>
+    </div>
+    <button type="button" class="btn primary" id="openlog">날짜별 업데이트 기록 보기</button>
   </header>
+
+  <section id="logview" hidden aria-labelledby="log-h">
+    <div class="hdr">
+      <div>
+        <h2 id="log-h" style="margin:0;font-size:18px;font-weight:600">날짜별 업데이트 기록</h2>
+        <p class="meta">자동 검색이 어떤 기사·기관 공고를 근거로 어떤 단계를 바꿨는지 날짜별로 보여줍니다.</p>
+      </div>
+      <button type="button" class="btn" id="closelog">현황판으로 돌아가기</button>
+    </div>
+    <div class="logbar">
+      <select id="lsrc" aria-label="출처 종류">
+        <option value="">모든 출처</option>
+        <option value="gov">기관 공고·보도자료</option>
+        <option value="news">언론 기사</option>
+      </select>
+      <input type="search" id="lq" placeholder="사업명 검색" aria-label="사업명 검색">
+    </div>
+    <div class="logbar" id="ldates" role="group" aria-label="날짜 선택"></div>
+    <div id="ldays"></div>
+    <p class="empty" id="lempty" hidden>이 조건에 맞는 기록이 없습니다.</p>
+  </section>
+
+  <div id="boardview">
 
   <section class="recent" aria-labelledby="recent-h">
     <h2 id="recent-h">최근 7일 바뀐 단계</h2>
@@ -143,6 +195,8 @@
     <p class="empty" id="empty" hidden>조건에 맞는 사업이 없습니다.</p>
   </section>
 
+  </div>
+
   <details class="about">
     <summary>단계 기준과 자동 확인 방식</summary>
     <ul>
@@ -150,7 +204,7 @@
       <li>민간투자사업 절차: 사업제안·고시 → 적격성조사 → 민투심 심의 → 제3자 제안공고(BTL은 시설사업기본계획 고시) → 우선협상대상자 지정 → 실시협약 체결 → 착공</li>
       <li>처음 상태는 팀 엑셀 목록(기술형입찰 2026.11.03, 민자 2026.01 기준)의 일정에서 정했습니다. 날짜가 지난 일정은 완료, 그다음 단계는 진행으로 표시했습니다. 분기·반기로만 적힌 일정은 실제로 됐는지 확인되기 전까지 완료로 바꾸지 않았습니다.</li>
       <li>'자동' 표시가 붙은 사업은 팀 조사 목록에 없던 사업을 자동 검색이 찾아 추가한 것입니다. 하루 세 번(오전·점심·오후) 새 사업을 찾습니다.</li>
-      <li>평일 아침 자동 검색이 사업들을 돌아가며 뉴스·공고를 확인하고, 단계가 실제로 끝났다는 근거를 찾으면 그 단계를 완료로 바꾸고 근거 링크를 남깁니다. 새로 나온 기술형·민자 사업도 찾아 목록에 추가합니다(NEW 표시).</li>
+      <li>평일 하루 3회 자동 검색이 사업들을 돌아가며 뉴스·공고를 확인하고, 단계가 실제로 끝났다는 근거를 찾으면 그 단계를 완료로 바꾸고 근거 링크를 남깁니다. 새로 나온 기술형·민자 사업도 찾아 목록에 추가합니다(NEW 표시).</li>
       <li>사업이 중단되거나 재정사업으로 바뀌었다는 근거가 나오면 '기술형·민자 중단' 탭으로 옮깁니다.</li>
       <li>규모·일정은 기사나 공고 요약 기준이라 바뀔 수 있습니다. 입찰 전에는 반드시 원문을 확인하세요. 공개된 정보만 싣습니다.</li>
     </ul>
@@ -163,7 +217,7 @@
     '입찰방법 심의': '입방심의', '입찰공고': '공고', 'PQ 접수': 'PQ', '입찰(설계서 제출)': '입찰', '설계심의': '설계심의', '실시설계적격자 선정': '적격자', '계약·착공': '계약·착공',
     '사업제안·고시': '제안', '적격성조사': '적격성', '민투심 심의': '민투심', '제3자 제안공고': '3자공고', '우선협상대상자 지정': '우협', '실시협약 체결': '협약', '착공': '착공'
   };
-  const S = { all: [], tab: '기술형입찰', step: '', q: '', active: false, sort: 'list', src: '' };
+  const S = { all: [], log: [], tab: '기술형입찰', step: '', q: '', active: false, sort: 'list', src: '', ldate: '', lsrc: '', lq: '' };
   const $ = (id) => document.getElementById(id);
   const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -196,7 +250,7 @@
     const active = S.all.filter((r) => r.track !== '중단' && curStep(r)).length;
     $('lede').textContent = '사업 ' + nf(S.all.length) + '개 중 ' + nf(active) + '개가 진행 단계에 있고, 최근 7일 동안 ' + nf(changes.length) + '건의 단계 변화가 확인됐습니다.';
     const last = S.all.flatMap((r) => (r.history || []).map((h) => h.date || '')).sort().pop();
-    $('meta').textContent = '마지막 확인 ' + fmt(last) + ' · 평일 아침 자동 검색 · 누구나 볼 수 있는 공개 페이지입니다';
+    $('meta').textContent = '마지막 확인 ' + fmt(last) + ' · 평일 하루 3회(08:50·11:50·16:50) 자동 검색 · 누구나 볼 수 있는 공개 페이지입니다';
     const ul = $('recent');
     if (!changes.length) { ul.replaceChildren(el('li', 'none', '최근 7일 동안 바뀐 단계가 없습니다.')); return; }
     ul.replaceChildren(...changes.slice(0, 10).map(({ r, h }) => {
@@ -327,16 +381,94 @@
     setTab(b.dataset.t);
     try { history.replaceState(null, '', '#' + hashOf[S.tab]); } catch (e) { /* ignore */ }
   }));
-  window.addEventListener('hashchange', () => setTab(tabOf[location.hash.slice(1)]));
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'log') { setLogOpen(true); return; } setLogOpen(false); setTab(tabOf[h]); });
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  const srcType = (url) => {
+    try { const h = new URL(url).hostname; return /(\.go\.kr|kdi\.re\.kr|\.re\.kr|lh\.or\.kr|ex\.co\.kr|kr\.or\.kr|kwater\.or\.kr|keco\.or\.kr|khnp\.co\.kr|kric\.go\.kr)$/.test(h) || /pimac|eiec/.test(h) ? 'gov' : 'news'; } catch (e) { return 'news'; }
+  };
+  function logEntries() {
+    const out = [];
+    S.all.forEach((r) => (r.history || []).forEach((h) => out.push({ date: String(h.date || ''), r, h, type: srcType(h.url) })));
+    return out;
+  }
+  function drawLog() {
+    const all = logEntries();
+    const runsBy = new Map();
+    (S.log || []).forEach((x) => { const d = String(x.at || '').slice(0, 10); if (!d) return; if (!runsBy.has(d)) runsBy.set(d, []); runsBy.get(d).push(x); });
+    const q = S.lq.trim().toLowerCase();
+    const f = all.filter((e) => (!S.lsrc || e.type === S.lsrc) && (!q || String(e.r.name || '').toLowerCase().includes(q)));
+    const byDate = new Map();
+    f.forEach((e) => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push(e); });
+    const dates = [...new Set([...byDate.keys(), ...(q || S.lsrc ? [] : runsBy.keys())])].filter(Boolean).sort().reverse();
+    const box = $('ldates');
+    const chip = (v, label, n) => { const b = el('button', 'dchip', label); b.type = 'button'; b.dataset.v = v; if (n != null) b.append(el('span', 'n', n)); b.setAttribute('aria-pressed', String(S.ldate === v)); return b; };
+    box.replaceChildren(chip('', '전체 날짜'), ...dates.map((d) => { const dt = new Date(d + 'T00:00:00Z'); return chip(d, fmt(d).slice(5) + ' (' + DOW[dt.getUTCDay()] + ')', (byDate.get(d) || []).length); }));
+    const show = S.ldate ? dates.filter((d) => d === S.ldate) : dates;
+    $('lempty').hidden = show.length !== 0;
+    $('ldays').replaceChildren(...show.map((d) => {
+      const sec = el('section', 'day');
+      const dt = new Date(d + 'T00:00:00Z');
+      const es = byDate.get(d) || [];
+      sec.append(el('h3', null, fmt(d) + ' (' + DOW[dt.getUTCDay()] + ') · 변경 ' + nf(es.length) + '건'));
+      const runs = runsBy.get(d) || [];
+      if (runs.length) {
+        const ul = el('ul', 'runs');
+        runs.sort((a, b) => String(a.at).localeCompare(String(b.at))).forEach((x) => {
+          const parts = [String(x.at).slice(11, 16) + ' 자동 검색'];
+          if (x.checked != null) parts.push('기존 사업 ' + nf(x.checked) + '개 확인');
+          if (x.added != null) parts.push('새 사업 ' + nf(x.added) + '개');
+          if (x.changed != null) parts.push('단계 변경 ' + nf(x.changed) + '건');
+          if (x.note) parts.push(x.note);
+          ul.append(el('li', null, parts.join(' · ')));
+        });
+        sec.append(ul);
+      }
+      if (!es.length) { sec.append(el('p', 'mut small', '이날은 바뀐 단계가 없습니다.')); return sec; }
+      const ul = el('ul', 'entries');
+      es.forEach((e) => {
+        const li = el('li', 'entry');
+        li.append(el('span', 'src ' + e.type, e.type === 'gov' ? '기관' : '기사'));
+        const body = el('div');
+        const pj = el('div', 'pj', e.r.name || '—');
+        pj.append(el('span', 'trk', (e.r.track === '중단' ? '중단' : e.r.track) + (e.r.agency ? ' · ' + e.r.agency : '')));
+        body.append(pj);
+        if (e.h.step) {
+          const c = el('div', 'chg2');
+          c.append(e.h.step + ' → ');
+          c.append(el('b', e.h.status === '완료' ? 'done' : null, e.h.status || ''));
+          body.append(c);
+        }
+        if (e.h.text) body.append(el('div', 'txt', e.h.text));
+        const a = link(e.h.url, (e.h.source || '원문') + ' 원문 보기');
+        if (a) { const lk = el('div', 'lk'); lk.append(a); body.append(lk); }
+        li.append(body); ul.append(li);
+      });
+      sec.append(ul);
+      return sec;
+    }));
+  }
+  function setLogOpen(open) {
+    $('logview').hidden = !open;
+    $('boardview').hidden = open;
+    $('openlog').hidden = open;
+    if (open) drawLog();
+  }
+  $('openlog').addEventListener('click', () => { setLogOpen(true); try { history.replaceState(null, '', '#log'); } catch (e) {} window.scrollTo(0, 0); });
+  $('closelog').addEventListener('click', () => { setLogOpen(false); try { history.replaceState(null, '', '#' + hashOf[S.tab]); } catch (e) {} });
+  $('ldates').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.ldate = b.dataset.v; drawLog(); });
+  $('lsrc').addEventListener('change', (e) => { S.lsrc = e.target.value; drawLog(); });
+  $('lq').addEventListener('input', (e) => { S.lq = e.target.value; drawLog(); });
+
   $('fstep').addEventListener('change', (e) => { S.step = e.target.value; draw(); });
   $('fq').addEventListener('input', (e) => { S.q = e.target.value; draw(); });
   $('factive').addEventListener('change', (e) => { S.active = e.target.checked; draw(); });
   $('fsort').addEventListener('change', (e) => { S.sort = e.target.value; draw(); });
   $('fsrc').addEventListener('change', (e) => { S.src = e.target.value; draw(); });
 
+  fetch('data/log.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).catch(() => []).then((l) => { S.log = Array.isArray(l) ? l : []; if (!$('logview').hidden) drawLog(); });
   fetch('data/projects.json', { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-    .then((d) => { S.all = Array.isArray(d) ? d : []; header(); setTab(tabOf[location.hash.slice(1)]); })
+    .then((d) => { S.all = Array.isArray(d) ? d : []; header(); setTab(tabOf[location.hash.slice(1)]); if (location.hash === '#log') setLogOpen(true); })
     .catch(() => { $('lede').textContent = '목록을 불러오지 못했습니다. 새로고침해 보세요.'; });
 })();
 </script>
