@@ -1,0 +1,32 @@
+name: 현황판 의견 보내기
+description: 고쳐야 할 내용이나 추가로 반영했으면 하는 내용을 알려주세요.
+title: "[의견] "
+labels: ["의견"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 의견 종류
+      options:
+        - 사업 정보가 틀렸어요 (단계·날짜·선정업체 등)
+        - 빠진 사업이 있어요
+        - 화면·기능 개선 제안
+        - 기타
+    validations:
+      required: true
+  - type: input
+    id: project
+    attributes:
+      label: 관련 사업명 (해당되면)
+      placeholder: 예) 송파하남선 광역철도 4공구
+  - type: textarea
+    id: detail
+    attributes:
+      label: 내용
+      description: 무엇을 어떻게 고치면 좋을지 적어주세요. 근거 기사나 공고 링크가 있으면 함께 적어주세요.
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: 이름·연락처 (선택)

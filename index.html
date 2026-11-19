@@ -118,6 +118,9 @@
   .entry .lk { font-size: 12px; margin-top: 4px; }
   .entry .lk a { color: var(--done); }
   #logview { display: flex; flex-direction: column; gap: 12px; }
+  .fb { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .fb h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .fb p { margin: 0; max-width: 75ch; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -129,7 +132,10 @@
       <p class="lede" id="lede">불러오는 중…</p>
       <p class="meta" id="meta"></p>
     </div>
-    <button type="button" class="btn primary" id="openlog">날짜별 업데이트 기록 보기</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn primary" id="openlog">날짜별 업데이트 기록 보기</button>
+      <a class="btn" href="#feedback" id="gofb" style="text-decoration:none">의견 보내기</a>
+    </div>
   </header>
 
   <section id="logview" hidden aria-labelledby="log-h">
@@ -197,6 +203,13 @@
   </section>
 
   </div>
+
+  <section class="fb" id="feedback" aria-labelledby="fb-h">
+    <h2 id="fb-h">의견 보내기</h2>
+    <p>사업 정보가 틀렸거나(단계·날짜·선정 업체), 빠진 사업이 있거나, 화면에서 고쳤으면 하는 점이 있으면 알려주세요. 확인 후 반영합니다.</p>
+    <a class="btn primary" id="fblink" href="https://github.com/changjuchoi/soc-project-board/issues/new?template=feedback.yml" target="_blank" rel="noopener noreferrer" style="text-decoration:none">의견 작성하기</a>
+    <p class="meta" id="fbnote">의견 작성 화면은 GitHub에서 열립니다(GitHub 로그인 필요).</p>
+  </section>
 
   <details class="about">
     <summary>단계 기준과 자동 확인 방식</summary>
@@ -384,7 +397,7 @@
     setTab(b.dataset.t);
     try { history.replaceState(null, '', '#' + hashOf[S.tab]); } catch (e) { /* ignore */ }
   }));
-  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'log') { setLogOpen(true); return; } setLogOpen(false); setTab(tabOf[h]); });
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'feedback') return; if (h === 'log') { setLogOpen(true); return; } setLogOpen(false); setTab(tabOf[h]); });
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
   const srcType = (url) => {
     try { const h = new URL(url).hostname; return /(\.go\.kr|kdi\.re\.kr|\.re\.kr|lh\.or\.kr|ex\.co\.kr|kr\.or\.kr|kwater\.or\.kr|keco\.or\.kr|khnp\.co\.kr|kric\.go\.kr)$/.test(h) || /pimac|eiec/.test(h) ? 'gov' : 'news'; } catch (e) { return 'news'; }
@@ -455,6 +468,7 @@
     $('logview').hidden = !open;
     $('boardview').hidden = open;
     $('openlog').hidden = open;
+    $('feedback').hidden = open;
     if (open) drawLog();
   }
   $('openlog').addEventListener('click', () => { setLogOpen(true); try { history.replaceState(null, '', '#log'); } catch (e) {} window.scrollTo(0, 0); });
