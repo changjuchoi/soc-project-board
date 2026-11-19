@@ -1,0 +1,12 @@
+{
+"meta": {
+"fetchedAt": "2026-11-19T16:33",
+"ok": false,
+"days": 14,
+"endpoint": null,
+"total": 0,
+"matched": 0,
+"error": "BidPublicInfoService04/getBidPblancListInfoCnstwk: HTTPError: HTTP Error 400: Bad Request"
+},
+"items": []
+}
